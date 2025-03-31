@@ -1,5 +1,5 @@
 ---
-title: "Home"
+title: Tech Posts
 layout: category
 ---
-Welcome to my blog!
+All about technology.

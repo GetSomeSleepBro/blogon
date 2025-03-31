@@ -1,0 +1,28 @@
+---
+layout: default
+---
+<h1>{{ page.title }}</h1>
+
+<h2>Subcategories</h2>
+<ul>
+  {% assign current_dir = page.path | remove: "index.md" %}
+  {% for p in site.pages %}
+    {% assign relative_path = p.path | remove_first: current_dir %}
+    {% assign parts = relative_path | split: "/" %}
+    {% if parts.size == 2 and parts[1] == "index.md" %}
+      <li><a href="{{ p.url }}">{{ p.title }}</a></li>
+    {% endif %}
+  {% endfor %}
+</ul>
+
+<h2>Posts</h2>
+<ul>
+  {% assign current_dir = page.path | remove: "index.md" %}
+  {% for p in site.pages %}
+    {% assign relative_path = p.path | remove_first: current_dir %}
+    {% assign parts = relative_path | split: "/" %}
+    {% if parts.size == 1 and p.name != "index.md" %}
+      <li><a href="{{ p.url }}">{{ p.title }}</a></li>
+    {% endif %}
+  {% endfor %}
+</ul>

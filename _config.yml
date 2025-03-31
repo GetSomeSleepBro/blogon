@@ -1,9 +1,7 @@
-# Site settings
 title: My Blog
 description: A blog built with Jekyll and GitHub Pages
-baseurl: "" # Leave empty for username.github.io, or "/my-blog" for project sites
-url: "https://username.github.io" # Replace with your site’s URL
+baseurl: "/blogon" # Leave empty for username.github.io, or "/my-blog" for project sites
+url: "https://s41r4j.github.io/" # Replace with your GitHub Pages URL
 
-# Build settings
 markdown: kramdown
-permalink: pretty # Creates URLs like /tech/programming/python/
+permalink: pretty

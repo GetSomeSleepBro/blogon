@@ -1,0 +1,171 @@
+{
+  "meta": {
+    "title": "Dark Patterns: Unveiling Manipulation",
+    "tagline": "Exposing the Subtle Art of Influence in Digital & Human Realms"
+  },
+  "patterns": {
+    "forced-continuity": {
+      "id": "forced-continuity",
+      "name": "Forced Continuity",
+      "description": "When free trials automatically convert to paid subscriptions without clear warning or easy cancellation.",
+      "how_to_spot": "Look for vague trial terms or difficult cancellation flows.",
+      "category": "digital",
+      "subcategory": "common_tactics"
+    },
+    "confirmshaming": {
+      "id": "confirmshaming",
+      "name": "Confirmshaming",
+      "description": "Guilting users into opting into something by shaming them if they decline.",
+      "how_to_spot": "Phrases like 'No thanks, I prefer to pay full price' for a discount.",
+      "category": "digital",
+      "subcategory": "common_tactics"
+    },
+    "roach-motel": {
+      "id": "roach-motel",
+      "name": "Roach Motel",
+      "description": "Making it easy to get into a situation but hard to get out of it.",
+      "how_to_spot": "Easy sign-up but complex cancellation processes.",
+      "category": "digital",
+      "subcategory": "common_tactics"
+    },
+    "infinite-scroll": {
+      "id": "infinite-scroll",
+      "name": "Infinite Scroll",
+      "description": "A feed that continuously loads new content as the user scrolls, preventing a natural stopping point.",
+      "how_to_spot": "Endless content without clear pagination or stopping points.",
+      "category": "digital",
+      "subcategory": "app_specific"
+    },
+    "autoplay-next": {
+      "id": "autoplay-next",
+      "name": "Autoplay Next Episode",
+      "description": "Automatically playing the next episode to keep users engaged for longer periods.",
+      "how_to_spot": "Content starts playing without explicit user action.",
+      "category": "digital",
+      "subcategory": "app_specific"
+    },
+    "countdown-timer": {
+      "id": "countdown-timer",
+      "name": "Countdown Timer",
+      "description": "Creating urgency with 'leaving soon' notifications for content.",
+      "how_to_spot": "Time-based pressure tactics for content consumption.",
+      "category": "digital",
+      "subcategory": "app_specific"
+    },
+    "fake-notifications": {
+      "id": "fake-notifications",
+      "name": "Fake Notifications",
+      "description": "Notifications designed to create a sense of urgency or social obligation that are not genuinely critical.",
+      "how_to_spot": "Frequent, non-essential notifications that drive app engagement.",
+      "category": "digital",
+      "subcategory": "app_specific"
+    },
+    "scarcity-indicators": {
+      "id": "scarcity-indicators",
+      "name": "Scarcity Indicators",
+      "description": "Showing limited stock or time-sensitive deals to create urgency.",
+      "how_to_spot": "Messages about limited availability or time constraints.",
+      "category": "digital",
+      "subcategory": "app_specific"
+    }
+  },
+  "techniques": {
+    "gaslighting": {
+      "id": "gaslighting",
+      "name": "Gaslighting",
+      "description": "Manipulating someone into questioning their own reality, memory, or sanity.",
+      "how_to_recognize": "Constant denial of events you clearly remember, 'You're crazy,' 'That never happened.'",
+      "category": "human",
+      "subcategory": "manipulation_techniques"
+    },
+    "emotional-blackmail": {
+      "id": "emotional-blackmail",
+      "name": "Emotional Blackmail",
+      "description": "Using emotions like guilt, fear, or obligation to control someone's behavior.",
+      "how_to_recognize": "Phrases like 'If you loved me, you would...' or 'After all I've done for you...'",
+      "category": "human",
+      "subcategory": "manipulation_techniques"
+    },
+    "love-bombing": {
+      "id": "love-bombing",
+      "name": "Love Bombing",
+      "description": "Overwhelming someone with excessive affection and attention to gain control.",
+      "how_to_recognize": "Intense, overwhelming attention that feels too good to be true early in a relationship.",
+      "category": "human",
+      "subcategory": "manipulation_techniques"
+    }
+  },
+  "biases": {
+    "confirmation-bias": {
+      "id": "confirmation-bias",
+      "name": "Confirmation Bias",
+      "explanation": "The tendency to search for, interpret, favor, and recall information in a way that confirms one's preexisting beliefs.",
+      "exploitation": "Manipulators feed you information that aligns with your views, making their narrative more believable.",
+      "example": "Only reading news sources that confirm your political views.",
+      "category": "human",
+      "subcategory": "cognitive_biases"
+    },
+    "anchoring-bias": {
+      "id": "anchoring-bias",
+      "name": "Anchoring Bias",
+      "explanation": "The tendency to rely too heavily on the first piece of information offered (the 'anchor') when making decisions.",
+      "exploitation": "Presenting an extreme initial offer to make subsequent, slightly less extreme offers seem reasonable.",
+      "example": "A high initial price for a product making a 'discounted' price seem like a good deal.",
+      "category": "human",
+      "subcategory": "cognitive_biases"
+    }
+  },
+  "apps": {
+    "netflix": {
+      "id": "netflix",
+      "name": "Netflix",
+      "description": "Streaming platform known for binge-watching optimization",
+      "logo": "🎬",
+      "patterns": ["autoplay-next", "countdown-timer", "infinite-scroll"]
+    },
+    "instagram": {
+      "id": "instagram",
+      "name": "Instagram",
+      "description": "Social media platform with engagement-focused design",
+      "logo": "📸",
+      "patterns": ["infinite-scroll", "fake-notifications"]
+    },
+    "amazon": {
+      "id": "amazon",
+      "name": "Amazon",
+      "description": "E-commerce platform with purchase optimization tactics",
+      "logo": "🛒",
+      "patterns": ["scarcity-indicators", "forced-continuity"]
+    }
+  },
+  "relationships": {
+    "forced-continuity": {
+      "found_in_apps": ["netflix", "amazon"],
+      "related_techniques": ["emotional-blackmail"],
+      "related_biases": ["sunk-cost-fallacy"],
+      "core_tactic": "Uses subscription psychology to maintain user commitment through investment"
+    },
+    "confirmshaming": {
+      "found_in_apps": ["amazon"],
+      "related_techniques": ["emotional-blackmail"],
+      "related_biases": ["confirmation-bias"],
+      "core_tactic": "Leverages social pressure and guilt to influence decisions"
+    },
+    "infinite-scroll": {
+      "found_in_apps": ["instagram", "netflix"],
+      "related_techniques": ["love-bombing"],
+      "related_biases": ["availability-heuristic"],
+      "core_tactic": "Creates addictive consumption patterns without natural stopping points"
+    },
+    "gaslighting": {
+      "exploits_biases": ["confirmation-bias", "anchoring-bias"],
+      "related_patterns": ["fake-notifications"],
+      "core_mechanism": "Distorts reality perception to maintain control"
+    },
+    "confirmation-bias": {
+      "exploited_by_techniques": ["gaslighting"],
+      "found_in_patterns": ["fake-notifications"],
+      "manipulation_method": "Feeds confirming information to reinforce existing beliefs"
+    }
+  }
+}

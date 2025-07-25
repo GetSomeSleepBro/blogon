@@ -222,6 +222,14 @@
       "how_to_recognize": "Refusing to speak, acknowledge, or respond to you for extended periods until you comply with their demands or apologize.",
       "category": "human",
       "type": "manipulation_technique"
+    },
+    "silent-sucker": {
+      "id": "silent-treatment",
+      "name": "Silent Treatment",
+      "description": "Withdrawing communication and attention as a form of punishment or control, creating anxiety and a desire for reconciliation.",
+      "how_to_recognize": "Refusing to speak, acknowledge, or respond to you for extended periods until you comply with their demands or apologize.",
+      "category": "human",
+      "type": "manipulation_technique"
     }
   },
   "biases": {

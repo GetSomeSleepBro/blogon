@@ -22,7 +22,6 @@
           "icon": "icon_link_or_name_2",
           "how_to_spot": "Phrases like 'No thanks, I prefer to pay full price' for a discount."
         }
-        // ... more common cyber patterns
       ]
     },
     "app_specific_patterns": {
@@ -57,7 +56,6 @@
             }
           ]
         }
-        // ... more app-specific patterns
       ]
     }
   },
@@ -80,7 +78,6 @@
           "icon": "icon_link_or_name_4",
           "how_to_recognize": "Phrases like 'Limited time offer!', 'Everyone else is doing it!'"
         }
-        // ... more classic manipulation techniques
       ]
     },
     "cognitive_biases_at_play": {
@@ -107,7 +104,6 @@
           "exploitation": "Highlighting popularity ('Millions have tried it!'), creating social pressure.",
           "example": "Buying a product just because it's a 'bestseller.'"
         }
-        // ... more cognitive biases
       ]
     }
   }

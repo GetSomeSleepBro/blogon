@@ -1,0 +1,644 @@
+{
+  "name": "Auto Shorts: Trend → Script → Stock → TTS → Edit → Upload",
+  "nodes": [
+    {
+      "id": "ManualTrigger_1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "SetConfig_1",
+      "name": "Set Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "project_name",
+              "value": "AutoShorts"
+            },
+            {
+              "name": "aspect_ratio",
+              "value": "9:16"
+            },
+            {
+              "name": "language",
+              "value": "en"
+            },
+            {
+              "name": "topic_seed",
+              "value": ""
+            },
+            {
+              "name": "tts_provider",
+              "value": "piper"
+            },
+            {
+              "name": "voice",
+              "value": "en_US-lessac-medium.onnx"
+            },
+            {
+              "name": "upload_target",
+              "value": "youtube"
+            },
+            {
+              "name": "out_dir",
+              "value": "/data/auto_videos"
+            }
+          ],
+          "number": [
+            {
+              "name": "duration_seconds",
+              "value": 60
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ComputeConfig_1",
+      "name": "Compute Config",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ],
+      "parameters": {
+        "functionCode": "const ratio = $json[\"aspect_ratio\"] || \"9:16\";\nlet orientation = \"portrait\";\nlet width = 1080, height = 1920;\nif (ratio === \"16:9\") { orientation = \"landscape\"; width = 1920; height = 1080; }\nelse if (ratio === \"1:1\") { orientation = \"square\"; width = 1080; height = 1080; }\nconst rssUrl = $json.topic_seed && $json.topic_seed.trim().length > 0\n  ? `https://news.google.com/rss/search?q=${encodeURIComponent($json.topic_seed)}&hl=en-US&gl=US&ceid=US:en`\n  : `https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en`;\nreturn [{\n  ...$json,\n  orientation,\n  frame_w: width,\n  frame_h: height,\n  rssUrl,\n  topicQuery: $json.topic_seed || \"\"\n}];"
+      }
+    },
+    {
+      "id": "RSS_Trending_1",
+      "name": "RSS Trending",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        900,
+        240
+      ],
+      "parameters": {
+        "url": "={{$json.rssUrl}}"
+      }
+    },
+    {
+      "id": "PickOneTopic_1",
+      "name": "Pick One Topic",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        240
+      ],
+      "parameters": {
+        "operation": "limit",
+        "options": {
+          "limit": 1
+        }
+      }
+    },
+    {
+      "id": "MergeConfigTopic_1",
+      "name": "Merge Config+Topic",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        300
+      ],
+      "parameters": {
+        "mode": "mergeByIndex"
+      }
+    },
+    {
+      "id": "ScriptAI_1",
+      "name": "Script AI (Chat)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1540,
+        300
+      ],
+      "parameters": {
+        "url": "={{ ($env.OPENAI_BASE_URL || 'https://api.openai.com/v1') + '/chat/completions' }}",
+        "method": "POST",
+        "authentication": "none",
+        "responseFormat": "json",
+        "jsonParameters": true,
+        "options": {},
+        "headers": {
+          "Authorization": "={{ 'Bearer ' + $env.OPENAI_API_KEY }}",
+          "Content-Type": "application/json"
+        },
+        "bodyParametersJson": "={\n  \"model\": \"{{$env.OPENAI_MODEL || 'gpt-4o-mini'}}\",\n  \"temperature\": 0.8,\n  \"response_format\": {\"type\": \"json_object\"},\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a creative short-form video writer. Output strict JSON only. Keys: title (string), description (string), tags (array of strings), narration_text (string <= requested duration; concise, engaging), hook (string), cta (string).\"},\n    {\"role\": \"user\", \"content\": \"Write a video script for a {{$json.duration_seconds}}-second short in {{$json.language}} about the trending topic: '{{$json.title || $json.link || \"latest news\"}}'. Make it platform-friendly and engaging. Avoid brand names unless essential. Consider a vertical {{$json.aspect_ratio}} video. Return only JSON.\"}\n  ]\n}"
+      }
+    },
+    {
+      "id": "ParseScript_1",
+      "name": "Parse Script JSON",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        300
+      ],
+      "parameters": {
+        "functionCode": "let content;\ntry { content = $json.choices[0].message.content; } catch (e) { content = \"{}\"; }\nlet data;\ntry { data = JSON.parse(content); } catch (e) { data = { title: 'Trending Topic', description: '', tags: [], narration_text: content, hook: '', cta: '' }; }\nconst base = $items('Merge Config+Topic')[0]?.json || {};\nreturn [{ ...base, ...data }];"
+      }
+    },
+    {
+      "id": "PexelsImages_1",
+      "name": "Search Pexels Images",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1980,
+        220
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.pexels.com/v1/search?query=' + encodeURIComponent($json.topicQuery || $json.title || 'news') + '&orientation=' + $json.orientation + '&per_page=30&size=large&locale=en-US' }}",
+        "method": "GET",
+        "authentication": "none",
+        "responseFormat": "json",
+        "options": {},
+        "headers": {
+          "Authorization": "={{$env.PEXELS_API_KEY}}"
+        }
+      }
+    },
+    {
+      "id": "PexelsVideos_1",
+      "name": "Search Pexels Videos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1980,
+        380
+      ],
+      "parameters": {
+        "url": "={{ 'https://api.pexels.com/videos/search?query=' + encodeURIComponent($json.topicQuery || $json.title || 'news') + '&per_page=8&min_duration=3&max_duration=15' }}",
+        "method": "GET",
+        "authentication": "none",
+        "responseFormat": "json",
+        "options": {},
+        "headers": {
+          "Authorization": "={{$env.PEXELS_API_KEY}}"
+        }
+      }
+    },
+    {
+      "id": "SelectAssets_1",
+      "name": "Select Assets + Setup",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        300
+      ],
+      "parameters": {
+        "functionCode": "const imgs = $items('Search Pexels Images')[0]?.json?.photos || [];\nconst vids = $items('Search Pexels Videos')[0]?.json?.videos || [];\nconst orient = $json.orientation || 'portrait';\nfunction bestVideoFile(v){\n  const vf = (v.video_files||[]).filter(x=>x.link && x.width && x.height);\n  vf.sort((a,b)=> (b.width*b.height)-(a.width*a.height));\n  return vf[0]?.link;\n}\nconst imgVariant = orient === 'portrait' ? 'portrait' : (orient==='landscape'?'landscape':'large');\nconst image_urls = imgs.slice(0, 8).map(p => (p.src?.[imgVariant] || p.src?.large || p.src?.original)).filter(Boolean);\nconst video_urls = vids.slice(0, 2).map(bestVideoFile).filter(Boolean);\nconst stamp = new Date().toISOString().replace(/[:.]/g, '-');\nconst workdir = `${$json.out_dir || '/data/auto_videos'}/run_${stamp}_${Math.random().toString(36).slice(2,8)}`;\nreturn [{\n  ...$json,\n  image_urls,\n  video_urls,\n  workdir\n}];"
+      }
+    },
+    {
+      "id": "IF_TTS_1",
+      "name": "IF TTS Provider",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.tts_provider}}",
+              "operation": "equal",
+              "value2": "piper"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "TTS_Piper_1",
+      "name": "TTS via Piper",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2640,
+        200
+      ],
+      "parameters": {
+        "command": "bash -lc 'set -e\nWF=\"{{$json.workdir}}\"\nmkdir -p \"$WF\"\ncat > \"$WF/script.txt\" << \"EOF\"\n{{$json.narration_text}}\nEOF\npiper --model \"{{$env.PIPER_MODEL || $json.voice || \"en_US-lessac-medium.onnx\"}}\" --output_file \"$WF/narration.wav\" < \"$WF/script.txt\"\necho \"$WF/narration.wav\"'\n",
+        "options": {}
+      }
+    },
+    {
+      "id": "SetAudioPathPiper_1",
+      "name": "Set Audio Path (Piper)",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        200
+      ],
+      "parameters": {
+        "functionCode": "const stdout = ($json.stdout || '').trim();\nreturn [{ ...$json, audio_path: stdout }];"
+      }
+    },
+    {
+      "id": "TTS_OpenAI_1",
+      "name": "OpenAI TTS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2640,
+        420
+      ],
+      "parameters": {
+        "url": "={{ ($env.OPENAI_BASE_URL || 'https://api.openai.com/v1') + '/audio/speech' }}",
+        "method": "POST",
+        "authentication": "none",
+        "responseFormat": "file",
+        "jsonParameters": true,
+        "options": {},
+        "headers": {
+          "Authorization": "={{ 'Bearer ' + $env.OPENAI_API_KEY }}",
+          "Content-Type": "application/json"
+        },
+        "bodyParametersJson": "={\n  \"model\": \"{{$env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts'}}\",\n  \"voice\": \"{{$env.OPENAI_TTS_VOICE || 'alloy'}}\",\n  \"input\": {{$json.narration_text ? JSON.stringify($json.narration_text) : '\"\"'}}\n}",
+        "sendBinaryData": false
+      }
+    },
+    {
+      "id": "WriteAudioFile_1",
+      "name": "Write Audio File",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        2860,
+        420
+      ],
+      "parameters": {
+        "fileName": "={{$json.workdir + '/narration.mp3'}}",
+        "binaryPropertyName": "data"
+      }
+    },
+    {
+      "id": "SetAudioPathOpenAI_1",
+      "name": "Set Audio Path (OpenAI)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        3080,
+        420
+      ],
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "audio_path",
+              "value": "={{$json.workdir + '/narration.mp3'}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "MergeTTS_1",
+      "name": "Merge TTS Branches",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        3300,
+        300
+      ],
+      "parameters": {
+        "mode": "mergeByIndex"
+      }
+    },
+    {
+      "id": "AssembleVideo_1",
+      "name": "Assemble Video (ffmpeg)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3520,
+        300
+      ],
+      "parameters": {
+        "command": "bash -lc 'set -e\nWF=\"{{$json.workdir}}\"; W={{$json.frame_w}}; H={{$json.frame_h}};\nmkdir -p \"$WF/segments\"\n# Save URL lists\ncat > \"$WF/images.txt\" << \"EOF\"\n{{ ($json.image_urls || []).join(\"\\n\") }}\nEOF\ncat > \"$WF/videos.txt\" << \"EOF\"\n{{ ($json.video_urls || []).join(\"\\n\") }}\nEOF\n# Download assets\n i=0; if [ -s \"$WF/images.txt\" ]; then while IFS= read -r u; do i=$((i+1)); printf -v n \"%03d\" \"$i\"; curl -sSL \"$u\" -o \"$WF/img_${n}.jpg\"; done < \"$WF/images.txt\"; fi\n j=0; if [ -s \"$WF/videos.txt\" ]; then while IFS= read -r u; do j=$((j+1)); printf -v n \"%03d\" \"$j\"; curl -sSL \"$u\" -o \"$WF/vid_${n}.mp4\"; done < \"$WF/videos.txt\"; fi\n# Audio\nAUDIO=\"{{$json.audio_path}}\"; [ -f \"$AUDIO\" ] || { echo \"Audio not found\" >&2; exit 1; }\nADUR=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"$AUDIO\" || echo 60)\nNI=$(ls \"$WF\"/img_*.jpg 2>/dev/null | wc -l | tr -d \" \")\nNV=$(ls \"$WF\"/vid_*.mp4 2>/dev/null | wc -l | tr -d \" \")\nN=$((NI+NV)); [ \"$N\" -gt 0 ] || { echo \"No media\" >&2; exit 1; }\nSEG=$(awk -v a=\"$ADUR\" -v n=\"$N\" 'BEGIN { s=a/n; if (s<3) s=3; if (s>7) s=7; printf \"%.2f\", s }')\n# Build segments\ncnt=0\nfor f in \"$WF\"/vid_*.mp4; do [ -e \"$f\" ] || break; cnt=$((cnt+1)); printf -v n \"%03d\" \"$cnt\"; ffmpeg -y -i \"$f\" -t \"$SEG\" -an -vf \"scale=$W:$H:force_original_aspect_ratio=cover,crop=$W:$H,format=yuv420p\" -r 30 \"$WF/segments/seg_${n}.mp4\" >/dev/null 2>&1; done\nfor f in \"$WF\"/img_*.jpg; do [ -e \"$f\" ] || break; cnt=$((cnt+1)); printf -v n \"%03d\" \"$cnt\"; ffmpeg -y -loop 1 -t \"$SEG\" -i \"$f\" -vf \"scale=$W:$H:force_original_aspect_ratio=cover,crop=$W:$H,format=yuv420p\" -r 30 -an \"$WF/segments/seg_${n}.mp4\" >/dev/null 2>&1; done\n# Concat\nls \"$WF/segments\"/seg_*.mp4 | sort > \"$WF/segments/parts.txt\"\n> \"$WF/segments/concat.txt\"; while IFS= read -r p; do printf \"file '%s'\\n\" \"$p\" >> \"$WF/segments/concat.txt\"; done < \"$WF/segments/parts.txt\"\nffmpeg -y -f concat -safe 0 -i \"$WF/segments/concat.txt\" -c:v libx264 -pix_fmt yuv420p \"$WF/video_noaudio.mp4\" >/dev/null 2>&1\nffmpeg -y -i \"$WF/video_noaudio.mp4\" -i \"$AUDIO\" -c:v copy -c:a aac -shortest \"$WF/final.mp4\" >/dev/null 2>&1\necho \"$WF/final.mp4\"'\n"
+      }
+    },
+    {
+      "id": "SetVideoPath_1",
+      "name": "Set Video Path",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 2,
+      "position": [
+        3740,
+        300
+      ],
+      "parameters": {
+        "functionCode": "const stdout = ($json.stdout || '').trim();\nreturn [{ ...$json, video_path: stdout }];"
+      }
+    },
+    {
+      "id": "ReadVideo_1",
+      "name": "Read Final Video",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        3960,
+        300
+      ],
+      "parameters": {
+        "filePath": "={{$json.video_path}}",
+        "binaryPropertyName": "video"
+      }
+    },
+    {
+      "id": "YouTubeUpload_1",
+      "name": "YouTube Upload",
+      "type": "n8n-nodes-base.youtube",
+      "typeVersion": 2,
+      "position": [
+        4180,
+        300
+      ],
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "binaryProperty": "video",
+        "title": "={{$json.title || 'AutoShorts'}}",
+        "description": "={{($json.description || '') + '\\n\\n' + (($json.tags || []).map(t => '#' + t.replace(/\\s+/g,'')).join(' '))}}",
+        "additionalFields": {
+          "tags": "={{$json.tags || []}}",
+          "privacyStatus": "unlisted",
+          "notifySubscribers": false
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Config": {
+      "main": [
+        [
+          {
+            "node": "Compute Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Config": {
+      "main": [
+        [
+          {
+            "node": "RSS Trending",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Config+Topic",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "RSS Trending": {
+      "main": [
+        [
+          {
+            "node": "Pick One Topic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick One Topic": {
+      "main": [
+        [
+          {
+            "node": "Merge Config+Topic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Config+Topic": {
+      "main": [
+        [
+          {
+            "node": "Script AI (Chat)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Script AI (Chat)": {
+      "main": [
+        [
+          {
+            "node": "Parse Script JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Script JSON": {
+      "main": [
+        [
+          {
+            "node": "Search Pexels Images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Pexels Images": {
+      "main": [
+        [
+          {
+            "node": "Search Pexels Videos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Pexels Videos": {
+      "main": [
+        [
+          {
+            "node": "Select Assets + Setup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Assets + Setup": {
+      "main": [
+        [
+          {
+            "node": "IF TTS Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF TTS Provider": {
+      "main": [
+        [
+          {
+            "node": "TTS via Piper",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OpenAI TTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TTS via Piper": {
+      "main": [
+        [
+          {
+            "node": "Set Audio Path (Piper)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Audio Path (Piper)": {
+      "main": [
+        [
+          {
+            "node": "Merge TTS Branches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI TTS": {
+      "main": [
+        [
+          {
+            "node": "Write Audio File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Audio File": {
+      "main": [
+        [
+          {
+            "node": "Set Audio Path (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Audio Path (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Merge TTS Branches",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge TTS Branches": {
+      "main": [
+        [
+          {
+            "node": "Assemble Video (ffmpeg)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Video (ffmpeg)": {
+      "main": [
+        [
+          {
+            "node": "Set Video Path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Video Path": {
+      "main": [
+        [
+          {
+            "node": "Read Final Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Final Video": {
+      "main": [
+        [
+          {
+            "node": "YouTube Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

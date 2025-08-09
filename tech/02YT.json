@@ -1,5 +1,5 @@
 {
-  "name": "Auto Shorts: Trend → Script → Stock → TTS → Edit → Upload",
+  "name": "Auto Shorts: Trend → Script → Stock → TTS → Edit → Upload (Fixed)",
   "nodes": [
     {
       "id": "ManualTrigger_1",
@@ -7,7 +7,7 @@
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        260,
+        240,
         300
       ],
       "parameters": {}
@@ -99,7 +99,7 @@
       "type": "n8n-nodes-base.itemLists",
       "typeVersion": 1,
       "position": [
-        1100,
+        1120,
         240
       ],
       "parameters": {
@@ -115,7 +115,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 2,
       "position": [
-        1320,
+        1340,
         300
       ],
       "parameters": {
@@ -126,9 +126,9 @@
       "id": "ScriptAI_1",
       "name": "Script AI (Chat)",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
+      "typeVersion": 5,
       "position": [
-        1540,
+        1560,
         300
       ],
       "parameters": {
@@ -137,12 +137,12 @@
         "authentication": "none",
         "responseFormat": "json",
         "jsonParameters": true,
-        "options": {},
         "headers": {
           "Authorization": "={{ 'Bearer ' + $env.OPENAI_API_KEY }}",
           "Content-Type": "application/json"
         },
-        "bodyParametersJson": "={\n  \"model\": \"{{$env.OPENAI_MODEL || 'gpt-4o-mini'}}\",\n  \"temperature\": 0.8,\n  \"response_format\": {\"type\": \"json_object\"},\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a creative short-form video writer. Output strict JSON only. Keys: title (string), description (string), tags (array of strings), narration_text (string <= requested duration; concise, engaging), hook (string), cta (string).\"},\n    {\"role\": \"user\", \"content\": \"Write a video script for a {{$json.duration_seconds}}-second short in {{$json.language}} about the trending topic: '{{$json.title || $json.link || \"latest news\"}}'. Make it platform-friendly and engaging. Avoid brand names unless essential. Consider a vertical {{$json.aspect_ratio}} video. Return only JSON.\"}\n  ]\n}"
+        "options": {},
+        "bodyParametersJson": "={\n  \"model\": \"{{$env.OPENAI_MODEL || 'gpt-4o-mini'}}\",\n  \"temperature\": 0.8,\n  \"response_format\": {\"type\": \"json_object\"},\n  \"messages\": [\n    {\"role\": \"system\", \"content\": \"You are a creative short-form video writer. Output strict JSON only. Keys: title (string), description (string), tags (array of strings), narration_text (string), hook (string), cta (string). Keep narration suitable for the requested duration.\"},\n    {\"role\": \"user\", \"content\": \"Write a video script for a {{$json.duration_seconds}}-second short in {{$json.language}} about the trending topic: '{{$json.title || $json.link || \"latest news\"}}'. Make it platform-friendly, safe, and engaging. Consider vertical {{$json.aspect_ratio}}. Return only JSON.\"}\n  ]\n}"
       }
     },
     {
@@ -151,51 +151,51 @@
       "type": "n8n-nodes-base.function",
       "typeVersion": 2,
       "position": [
-        1760,
+        1780,
         300
       ],
       "parameters": {
-        "functionCode": "let content;\ntry { content = $json.choices[0].message.content; } catch (e) { content = \"{}\"; }\nlet data;\ntry { data = JSON.parse(content); } catch (e) { data = { title: 'Trending Topic', description: '', tags: [], narration_text: content, hook: '', cta: '' }; }\nconst base = $items('Merge Config+Topic')[0]?.json || {};\nreturn [{ ...base, ...data }];"
+        "functionCode": "let content = '';\ntry { content = $json.choices[0].message.content || '{}'; } catch (e) { content = '{}'; }\nlet data;\ntry { data = JSON.parse(content); } catch (e) { data = { title: 'Trending Topic', description: '', tags: [], narration_text: content, hook: '', cta: '' }; }\nreturn [{ ...$json, ...data }];"
       }
     },
     {
       "id": "PexelsImages_1",
       "name": "Search Pexels Images",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
+      "typeVersion": 5,
       "position": [
-        1980,
+        2000,
         220
       ],
       "parameters": {
-        "url": "={{ 'https://api.pexels.com/v1/search?query=' + encodeURIComponent($json.topicQuery || $json.title || 'news') + '&orientation=' + $json.orientation + '&per_page=30&size=large&locale=en-US' }}",
+        "url": "={{ 'https://api.pexels.com/v1/search?query=' + encodeURIComponent($json.topicQuery || $json.title || 'news') + '&orientation=' + ($json.orientation || 'portrait') + '&per_page=30&size=large&locale=en-US' }}",
         "method": "GET",
         "authentication": "none",
         "responseFormat": "json",
-        "options": {},
         "headers": {
           "Authorization": "={{$env.PEXELS_API_KEY}}"
-        }
+        },
+        "options": {}
       }
     },
     {
       "id": "PexelsVideos_1",
       "name": "Search Pexels Videos",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
+      "typeVersion": 5,
       "position": [
-        1980,
-        380
+        2200,
+        300
       ],
       "parameters": {
         "url": "={{ 'https://api.pexels.com/videos/search?query=' + encodeURIComponent($json.topicQuery || $json.title || 'news') + '&per_page=8&min_duration=3&max_duration=15' }}",
         "method": "GET",
         "authentication": "none",
         "responseFormat": "json",
-        "options": {},
         "headers": {
           "Authorization": "={{$env.PEXELS_API_KEY}}"
-        }
+        },
+        "options": {}
       }
     },
     {
@@ -204,11 +204,11 @@
       "type": "n8n-nodes-base.function",
       "typeVersion": 2,
       "position": [
-        2200,
+        2420,
         300
       ],
       "parameters": {
-        "functionCode": "const imgs = $items('Search Pexels Images')[0]?.json?.photos || [];\nconst vids = $items('Search Pexels Videos')[0]?.json?.videos || [];\nconst orient = $json.orientation || 'portrait';\nfunction bestVideoFile(v){\n  const vf = (v.video_files||[]).filter(x=>x.link && x.width && x.height);\n  vf.sort((a,b)=> (b.width*b.height)-(a.width*a.height));\n  return vf[0]?.link;\n}\nconst imgVariant = orient === 'portrait' ? 'portrait' : (orient==='landscape'?'landscape':'large');\nconst image_urls = imgs.slice(0, 8).map(p => (p.src?.[imgVariant] || p.src?.large || p.src?.original)).filter(Boolean);\nconst video_urls = vids.slice(0, 2).map(bestVideoFile).filter(Boolean);\nconst stamp = new Date().toISOString().replace(/[:.]/g, '-');\nconst workdir = `${$json.out_dir || '/data/auto_videos'}/run_${stamp}_${Math.random().toString(36).slice(2,8)}`;\nreturn [{\n  ...$json,\n  image_urls,\n  video_urls,\n  workdir\n}];"
+        "functionCode": "const imgs = $items('Search Pexels Images')[0]?.json?.photos || [];\nconst vids = $json?.videos || $items('Search Pexels Videos')[0]?.json?.videos || [];\nconst orient = $json.orientation || 'portrait';\nfunction bestVideoFile(v){\n  const vf = (v.video_files||[]).filter(x=>x.link && x.width && x.height);\n  vf.sort((a,b)=> (b.width*b.height)-(a.width*a.height));\n  return vf[0]?.link;\n}\nconst imgVariant = orient === 'portrait' ? 'portrait' : (orient==='landscape'?'landscape':'large');\nconst image_urls = imgs.slice(0, 8).map(p => (p.src?.[imgVariant] || p.src?.large || p.src?.original)).filter(Boolean);\nconst video_urls = vids.slice(0, 2).map(bestVideoFile).filter(Boolean);\nconst stamp = new Date().toISOString().replace(/[:.]/g, '-');\nconst workdir = `${$json.out_dir || '/data/auto_videos'}/run_${stamp}_${Math.random().toString(36).slice(2,8)}`;\nreturn [{\n  ...$json,\n  image_urls,\n  video_urls,\n  workdir\n}];"
       }
     },
     {
@@ -217,7 +217,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        2420,
+        2640,
         300
       ],
       "parameters": {
@@ -238,7 +238,7 @@
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        2640,
+        2860,
         200
       ],
       "parameters": {
@@ -252,7 +252,7 @@
       "type": "n8n-nodes-base.function",
       "typeVersion": 2,
       "position": [
-        2860,
+        3080,
         200
       ],
       "parameters": {
@@ -263,9 +263,9 @@
       "id": "TTS_OpenAI_1",
       "name": "OpenAI TTS",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
+      "typeVersion": 5,
       "position": [
-        2640,
+        2860,
         420
       ],
       "parameters": {
@@ -274,13 +274,12 @@
         "authentication": "none",
         "responseFormat": "file",
         "jsonParameters": true,
-        "options": {},
         "headers": {
           "Authorization": "={{ 'Bearer ' + $env.OPENAI_API_KEY }}",
           "Content-Type": "application/json"
         },
-        "bodyParametersJson": "={\n  \"model\": \"{{$env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts'}}\",\n  \"voice\": \"{{$env.OPENAI_TTS_VOICE || 'alloy'}}\",\n  \"input\": {{$json.narration_text ? JSON.stringify($json.narration_text) : '\"\"'}}\n}",
-        "sendBinaryData": false
+        "options": {},
+        "bodyParametersJson": "={\n  \"model\": \"{{$env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts'}}\",\n  \"voice\": \"{{$env.OPENAI_TTS_VOICE || 'alloy'}}\",\n  \"input\": {{$json.narration_text ? JSON.stringify($json.narration_text) : '\"\"'}}\n}"
       }
     },
     {
@@ -289,7 +288,7 @@
       "type": "n8n-nodes-base.writeBinaryFile",
       "typeVersion": 1,
       "position": [
-        2860,
+        3080,
         420
       ],
       "parameters": {
@@ -303,7 +302,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 2,
       "position": [
-        3080,
+        3300,
         420
       ],
       "parameters": {
@@ -316,19 +315,6 @@
             }
           ]
         }
-      }
-    },
-    {
-      "id": "MergeTTS_1",
-      "name": "Merge TTS Branches",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 2,
-      "position": [
-        3300,
-        300
-      ],
-      "parameters": {
-        "mode": "mergeByIndex"
       }
     },
     {
@@ -556,7 +542,7 @@
       "main": [
         [
           {
-            "node": "Merge TTS Branches",
+            "node": "Assemble Video (ffmpeg)",
             "type": "main",
             "index": 0
           }
@@ -589,20 +575,9 @@
       "main": [
         [
           {
-            "node": "Merge TTS Branches",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge TTS Branches": {
-      "main": [
-        [
-          {
             "node": "Assemble Video (ffmpeg)",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
